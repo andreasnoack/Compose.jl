@@ -388,7 +388,7 @@ function finish(img::SVG)
             write(img.out,
                 """
                 <script> <![CDATA[
-                $(escape_script(readstring(snapsvgjs)))
+                $(escape_script(read(snapsvgjs, String)))
                 ]]> </script>
                 """)
         elseif img.jsmode == :linkabs
@@ -407,7 +407,7 @@ function finish(img::SVG)
             if img.jsmode == :embed
                 write(img.out, "<script> <![CDATA[\n")
                 for script in img.jsheader
-                    write(img.out, escape_script(readstring(script)), "\n")
+                    write(img.out, escape_script(read(script, String)), "\n")
                 end
             elseif img.jsmode == :linkabs
                 for script in img.jsheader
