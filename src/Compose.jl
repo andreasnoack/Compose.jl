@@ -7,6 +7,7 @@ using IterTools
 using DataStructures
 using Compat
 using Measures
+using Nullables
 import JSON
 
 import Base: length, start, next, done, isempty, getindex, setindex!,
