@@ -1,6 +1,6 @@
 # A special kind of container promise that performs table layout optimization.
 
-type Table <: ContainerPromise
+mutable struct Table <: ContainerPromise
     # Direct children must be Contexts, and not just Containers. If
     # children[i,j] has a vector with multiple children it indicates multiple
     # possible layouts for that cell in the table.
