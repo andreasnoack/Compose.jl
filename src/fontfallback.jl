@@ -4,7 +4,7 @@
 const PANGO_SCALE = 1024.0
 
 # Serialized glyph sizes for commont fonts.
-const glyphsizes = open(fd -> JSON.parse(read(fd, String)),
+const glyphsizes = open(fd -> JSON.parse(readstring(fd)),
                         joinpath(dirname(@__FILE__), "..", "data", "glyphsize.json"))
 
 # It's better to overestimate text extents than to underestimes, since the later

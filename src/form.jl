@@ -1,6 +1,6 @@
 # A form is something that ends up as geometry in the graphic.
 
-abstract type FormPrimitive end
+@compat abstract type FormPrimitive end
 
 const empty_tag = Symbol("")
 
@@ -8,10 +8,10 @@ struct Form{P <: FormPrimitive} <: ComposeNode
     primitives::Vector{P}
     tag::Symbol
 
-    Form{P}(prim, tag::Symbol=empty_tag) where {P} = new{P}(prim, tag)
+    (::Type{Form{P}}){P}(prim, tag::Symbol=empty_tag) = new{P}(prim, tag)
 end
 
-Form(primitives::Vector{P}, tag::Symbol=empty_tag) where {P<:FormPrimitive} = Form{P}(primitives, tag)
+Form{P<:FormPrimitive}(primitives::Vector{P}, tag::Symbol=empty_tag) = Form{P}(primitives, tag)
 
 isempty(f::Form) = isempty(f.primitives)
 
@@ -21,7 +21,7 @@ isscalar(f::Form) =
 resolve(box::AbsoluteBox, units::UnitBox, t::Transform, form::Form) =
         Form([resolve(box, units, t, primitive) for primitive in form.primitives])
 
-Base.similar(f::Form{T}) where {T} = Form{T}(T[])
+Base.similar{T}(f::Form{T}) = Form{T}(T[])
 
 form_string(::Form) = "FORM"  # fallback definition
 
@@ -32,7 +32,7 @@ struct SimplePolygonPrimitive{P <: Vec} <: FormPrimitive
     points::Vector{P}
 end
 
-const SimplePolygon{P<:SimplePolygonPrimitive} = Form{P}
+@compat const SimplePolygon{P<:SimplePolygonPrimitive} = Form{P}
 
 const Polygon = SimplePolygon
 const PolygonPrimitive = SimplePolygonPrimitive
@@ -45,7 +45,7 @@ polygon() = Form([PolygonPrimitive(Vec[])])
 Define a polygon. `points` is an array of `(x,y)` tuples
 that specify the corners of the polygon.
 """
-function polygon(points::AbstractArray{T}, tag=empty_tag) where T <: XYTupleOrVec
+function polygon{T <: XYTupleOrVec}(points::AbstractArray{T}, tag=empty_tag)
     XM, YM = narrow_polygon_point_types(Vector[points])
     if XM == Any
         XM = Measure
@@ -94,7 +94,7 @@ struct ComplexPolygonPrimitive{P <: Vec} <: FormPrimitive
     rings::Vector{Vector{P}}
 end
 
-const ComplexPolygon{P<:ComplexPolygonPrimitive} = Form{P}
+@compat const ComplexPolygon{P<:ComplexPolygonPrimitive} = Form{P}
 
 complexpolygon() = ComplexPolygon([ComplexPolygonPrimitive(Vec[])])
 
@@ -138,7 +138,7 @@ struct RectanglePrimitive{P <: Vec, M1 <: Measure, M2 <: Measure} <: FormPrimiti
     height::M2
 end
 
-const Rectangle{P<:RectanglePrimitive} = Form{P}
+@compat const Rectangle{P<:RectanglePrimitive} = Form{P}
 
 """
     rectangle()
@@ -216,10 +216,10 @@ struct CirclePrimitive{P <: Vec, M <: Measure} <: FormPrimitive
     radius::M
 end
 
-CirclePrimitive(center::P, radius::M) where {P, M} = CirclePrimitive{P, M}(center, radius)
+CirclePrimitive{P, M}(center::P, radius::M) = CirclePrimitive{P, M}(center, radius)
 CirclePrimitive(x, y, r) = CirclePrimitive((x_measure(x), y_measure(y)), x_measure(r))
 
-const Circle{P<:CirclePrimitive} = Form{P}
+@compat const Circle{P<:CirclePrimitive} = Form{P}
 
 """
     circle()
@@ -278,7 +278,7 @@ struct EllipsePrimitive{P1<:Vec, P2<:Vec, P3<:Vec} <: FormPrimitive
     y_point::P3
 end
 
-const Ellipse{P<:EllipsePrimitive} = Form{P}
+@compat const Ellipse{P<:EllipsePrimitive} = Form{P}
 
 function ellipse()
     prim = EllipsePrimitive((0.5w, 0.5h),
@@ -329,7 +329,7 @@ form_string(::Ellipse) = "E"
 # Text
 # ----
 
-abstract type HAlignment end
+@compat abstract type HAlignment end
 struct HLeft   <: HAlignment end
 struct HCenter <: HAlignment end
 struct HRight  <: HAlignment end
@@ -338,7 +338,7 @@ const hleft   = HLeft()
 const hcenter = HCenter()
 const hright  = HRight()
 
-abstract type VAlignment end
+@compat abstract type VAlignment end
 struct VTop    <: VAlignment end
 struct VCenter <: VAlignment end
 struct VBottom <: VAlignment end
@@ -358,7 +358,7 @@ struct TextPrimitive{P<:Vec, R<:Rotation} <: FormPrimitive
     rot::R
 end
 
-const Text{P<:TextPrimitive} = Form{P}
+@compat const Text{P<:TextPrimitive} = Form{P}
 
 """
     text(x, y, value [,halign::HAlignment [,valign::VAlignment [,rot::Rotation]]])
@@ -400,8 +400,8 @@ text(xs::AbstractArray, ys::AbstractArray, values::AbstractArray,
     @makeform (x in xs, y in ys, value in values, halign in haligns, valign in valigns, rot in rots),
         TextPrimitive((x_measure(x), y_measure(y)), value, halign, valign, rot) tag
 
-function resolve(box::AbsoluteBox, units::UnitBox, t::Transform,
-                 p::TextPrimitive{P, R}) where {P, R}
+function resolve{P, R}(box::AbsoluteBox, units::UnitBox, t::Transform,
+                       p::TextPrimitive{P, R})
     rot = resolve(box, units, t, p.rot)
     return TextPrimitive{AbsoluteVec2, typeof(rot)}(
                 resolve(box, units, t, p.position),
@@ -444,14 +444,14 @@ struct LinePrimitive{P<:Vec} <: FormPrimitive
     points::Vector{P}
 end
 
-const Line{P<:LinePrimitive} = Form{P}
+@compat const Line{P<:LinePrimitive} = Form{P}
 
 function line()
     prim = LinePrimitive(Vec[])
     return Line{typeof(prim)}([prim])
 end
 
-function line(points::AbstractArray{T}, tag=empty_tag) where T <: XYTupleOrVec
+function line{T <: XYTupleOrVec}(points::AbstractArray{T}, tag=empty_tag)
     XM, YM = narrow_polygon_point_types(Vector[points])
     VecType = XM == YM == Any ? Vec2 : Tuple{XM, YM}
     prim = LinePrimitive(VecType[(x_measure(point[1]), y_measure(point[2])) for point in points])
@@ -500,7 +500,7 @@ struct CurvePrimitive{P1<:Vec, P2<:Vec, P3<:Vec, P4<:Vec} <: FormPrimitive
     anchor1::P4
 end
 
-const Curve{P<:CurvePrimitive} = Form{P}
+@compat const Curve{P<:CurvePrimitive} = Form{P}
 
 function curve(anchor0::XYTupleOrVec, ctrl0::XYTupleOrVec,
                ctrl1::XYTupleOrVec, anchor1::XYTupleOrVec, tag=empty_tag)
@@ -539,7 +539,7 @@ struct BitmapPrimitive{P <: Vec, XM <: Measure, YM <: Measure} <: FormPrimitive
     height::YM
 end
 
-const Bitmap{P<:BitmapPrimitive} = Form{P}
+@compat const Bitmap{P<:BitmapPrimitive} = Form{P}
 
 function bitmap(mime::AbstractString, data::Vector{UInt8}, x0, y0, width, height, tag=empty_tag)
     corner = (x_measure(x0), y_measure(y0))
@@ -572,7 +572,7 @@ form_string(::Bitmap) = "B"
 
 # An implementation of the SVG path mini-language.
 
-abstract type PathOp end
+@compat abstract type PathOp end
 
 struct MoveAbsPathOp <: PathOp
     to::Vec
@@ -862,7 +862,7 @@ struct ArcRelPathOp <: PathOp
     to::Vec
 end
 
-function parsepathop(::Type{T}, tokens::AbstractArray, i) where T <: Union{ArcAbsPathOp, ArcRelPathOp}
+function parsepathop{T <: Union{ArcAbsPathOp, ArcRelPathOp}}(::Type{T}, tokens::AbstractArray, i)
     assert_pathop_tokens_len(T, tokens, i, 7)
 
     if isa(tokens[i + 3], Bool)
@@ -965,7 +965,7 @@ const Path = Form{PathPrimitive}
 
 path(tokens::AbstractArray, tag=empty_tag) = Path([PathPrimitive(parsepath(tokens))], tag)
 
-path(tokens::AbstractArray{T}, tag=empty_tag) where {T <: AbstractArray} =
+path{T <: AbstractArray}(tokens::AbstractArray{T}, tag=empty_tag) =
         Path([PathPrimitive(parsepath(ts)) for ts in tokens], tag)
 
 resolve(box::AbsoluteBox, units::UnitBox, t::Transform, p::PathPrimitive) =

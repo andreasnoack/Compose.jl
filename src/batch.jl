@@ -20,7 +20,7 @@ Attempt to batch a form. Return a Nullable{FormBatch} which is null if the Form
 could not be batched, and non-null if the original form can be replaced with teh
 resulting FormBatch.
 """
-batch(form::Form{P}) where {P} = Nullable{FormBatch{P}}()
+batch{P}(form::Form{P}) = Nullable{FormBatch{P}}()
 
 # Note: in tests using random data, this optimization wasn't worth it. I'm
 # keeping it around out of hopes I find a more clever version that is
@@ -48,7 +48,7 @@ function filter_redundant_offsets!(offsets::Vector{AbsoluteVec2})
     return nonredundant_offsets
 end
 
-function batch(form::Form{T}) where T <: CirclePrimitive
+function batch{T <: CirclePrimitive}(form::Form{T})
     # circles can be batched if they all have the same radius.
     r = form.primitives[1].radius
     n = length(form.primitives)

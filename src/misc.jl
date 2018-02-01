@@ -1,5 +1,3 @@
-iszero(x::T) where {T} = x == zero(T)
-
 Maybe(T::Type) = Union{T,Void}
 
 function in_expr_args(ex::Expr)
@@ -118,10 +116,10 @@ end
 
 
 narrow_polygon_point_types(
-            point_arrays::AbstractArray{Vector{Tuple{XM, YM}}}) where {XM <: Measure, YM <: Measure} = (XM, YM)
+    point_arrays::AbstractArray{Vector{Tuple{XM, YM}}}) where {XM<:Measure,YM<:Measure} = (XM, YM)
 
-type_params(p::Type{Tuple{XM, YM}}) where {XM, YM} = (Any, Any)
-type_params(p::Type{Tuple{XM, YM}}) where {XM <: Measure, YM <: Measure} = (XM, YM)
+type_params(p::Type{Tuple{<:Any,<:Any}}) = (Any, Any)
+type_params(p::Type{Tuple{XM,YM}}) where {XM<:Measure,YM<:Measure} = (XM, YM)
 type_params(p::Type{Union{}}) = (Any, Any)
 
 function narrow_polygon_point_types(point_arrays::AbstractArray)
@@ -136,8 +134,8 @@ function narrow_polygon_point_types(point_arrays::AbstractArray)
     end
 end
 
-function narrow_polygon_point_types(ring_arrays::Vector{Vector{Vector{P}}}) where P <: Tuple
-    type_params(p::Type{Tuple{XM, YM}}) where {XM, YM} = (XM, YM)
+function narrow_polygon_point_types(ring_arrays::Vector{Vector{Vector{<:Tuple}}})
+    # type_params{XM, YM}(p::Type{Tuple{XM, YM}}) = (XM, YM)
 
     xm = nothing
     ym = nothing
@@ -154,7 +152,7 @@ function narrow_polygon_point_types(ring_arrays::Vector{Vector{Vector{P}}}) wher
     if xm == nothing
         return Any, Any
     else
-        return xy, ym
+        return xm, ym
     end
 end
 

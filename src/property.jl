@@ -1,7 +1,7 @@
-abstract type PropertyPrimitive end
+@compat abstract type PropertyPrimitive end
 
 # Meaningless isless function used to sort in optimize_batching
-function Base.isless(a::T, b::T) where T <: PropertyPrimitive
+function Base.isless{T <: PropertyPrimitive}(a::T, b::T)
     for field in fieldnames(T)
         x = getfield(a, field)
         y = getfield(b, field)
@@ -36,7 +36,7 @@ isscalar(p::Property) =
 # Some properties can be applied multiple times, most cannot.
 isrepeatable(p::Property) = false
 
-resolve(box::AbsoluteBox, units::UnitBox, t::Transform, p::Property{T}) where {T} =
+resolve{T}(box::AbsoluteBox, units::UnitBox, t::Transform, p::Property{T}) =
         Property{T}([resolve(box, units, t, primitive) for primitive in p.primitives])
 
 # Property primitive catchall: most properties don't need measure transforms
@@ -99,7 +99,7 @@ prop_string(::StrokeDash) = "sd"
 # StrokeLineCap
 # -------------
 
-abstract type LineCap end
+@compat abstract type LineCap end
 struct LineCapButt <: LineCap end
 struct LineCapSquare <: LineCap end
 struct LineCapRound <: LineCap end
@@ -123,7 +123,7 @@ prop_string(::StrokeLineCap) = "slc"
 # StrokeLineJoin
 # --------------
 
-abstract type LineJoin end
+@compat abstract type LineJoin end
 struct LineJoinMiter <: LineJoin end
 struct LineJoinRound <: LineJoin end
 struct LineJoinBevel <: LineJoin end
@@ -237,7 +237,7 @@ const Clip = Property{ClipPrimitive}
 
 clip() = Clip([ClipPrimitive(Array{Vec}(0))])
 
-function clip(points::AbstractArray{T}) where T <: XYTupleOrVec
+function clip{T <: XYTupleOrVec}(points::AbstractArray{T})
     XM, YM = narrow_polygon_point_types(Vector[points])
     if XM == Any
         XM = Length{:cx, Float64}
