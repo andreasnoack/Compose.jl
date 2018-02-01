@@ -47,7 +47,7 @@ function isinstalled(pkg, ge=v"0.0.0-")
     end
 end
 
-@compat abstract type Backend end
+abstract type Backend end
 
 """
 Some backends can more efficiently draw forms by batching. If so, they
@@ -67,10 +67,10 @@ include("measure.jl")
 include("list.jl")
 
 # Every graphic in Compose consists of a tree.
-@compat abstract type ComposeNode end
+abstract type ComposeNode end
 
 # Used to mark null child pointers
-immutable NullNode <: ComposeNode end
+struct NullNode <: ComposeNode end
 nullnode = NullNode()
 
 include("form.jl")

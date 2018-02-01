@@ -1,4 +1,4 @@
-iszero{T}(x::T) = x == zero(T)
+iszero(x::T) where {T} = x == zero(T)
 
 Maybe(T::Type) = Union{T,Void}
 
@@ -117,11 +117,11 @@ macro makeprimitives(args)
 end
 
 
-narrow_polygon_point_types{XM <: Measure, YM <: Measure}(
-            point_arrays::AbstractArray{Vector{Tuple{XM, YM}}}) = (XM, YM)
+narrow_polygon_point_types(
+            point_arrays::AbstractArray{Vector{Tuple{XM, YM}}}) where {XM <: Measure, YM <: Measure} = (XM, YM)
 
-type_params{XM, YM}(p::Type{Tuple{XM, YM}}) = (Any, Any)
-type_params{XM <: Measure, YM <: Measure}(p::Type{Tuple{XM, YM}}) = (XM, YM)
+type_params(p::Type{Tuple{XM, YM}}) where {XM, YM} = (Any, Any)
+type_params(p::Type{Tuple{XM, YM}}) where {XM <: Measure, YM <: Measure} = (XM, YM)
 type_params(p::Type{Union{}}) = (Any, Any)
 
 function narrow_polygon_point_types(point_arrays::AbstractArray)
@@ -136,8 +136,8 @@ function narrow_polygon_point_types(point_arrays::AbstractArray)
     end
 end
 
-function narrow_polygon_point_types{P <: Tuple}(ring_arrays::Vector{Vector{Vector{P}}})
-    type_params{XM, YM}(p::Type{Tuple{XM, YM}}) = (XM, YM)
+function narrow_polygon_point_types(ring_arrays::Vector{Vector{Vector{P}}}) where P <: Tuple
+    type_params(p::Type{Tuple{XM, YM}}) where {XM, YM} = (XM, YM)
 
     xm = nothing
     ym = nothing

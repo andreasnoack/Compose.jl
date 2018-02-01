@@ -1,10 +1,10 @@
 # A container is a node in the tree that can have Forms, Properties, or other
 # Containers as children.
-@compat abstract type Container <: ComposeNode end
+abstract type Container <: ComposeNode end
 
 
 # The basic Container which defines a coordinate transform for its children.
-type Context <: Container
+mutable struct Context <: Container
     # Bounding box relative to the parent's coordinates
     box::BoundingBox
 
@@ -228,10 +228,10 @@ end
 # absolute size, or it is one many possible layout that we want to decide
 # between before rendering. A ContainerPromise lets us defer computing a subtree
 # until the graphic is actually being rendered.
-@compat abstract type ContainerPromise <: Container end
+abstract type ContainerPromise <: Container end
 
 # This information is passed to a container promise at drawtime.
-immutable ParentDrawContext
+struct ParentDrawContext
     t::Transform
     units::UnitBox
     box::Absolute2DBox
@@ -242,7 +242,7 @@ end
 # since we can that way avoid realizing layout possibilities that are not used.
 # That means we need to be able to express size constraints on these.
 
-type AdhocContainerPromise <: ContainerPromise
+mutable struct AdhocContainerPromise <: ContainerPromise
     # A function of the form:
     #   f(parent::ParentDrawContext) → Container
     f::Function
@@ -334,7 +334,7 @@ end
 
 register_coords(backend::Backend, box, units, transform, form) = nothing
 
-immutable DrawState
+struct DrawState
     pop_poperty::Bool
     container::Container
     parent_transform::Transform
