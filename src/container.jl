@@ -1,10 +1,10 @@
 # A container is a node in the tree that can have Forms, Properties, or other
 # Containers as children.
-@compat abstract type Container <: ComposeNode end
+abstract type Container <: ComposeNode end
 
 
 # The basic Container which defines a coordinate transform for its children.
-type Context <: Container
+mutable struct Context <: Container
     # Bounding box relative to the parent's coordinates
     box::BoundingBox
 
@@ -242,7 +242,7 @@ end
 # since we can that way avoid realizing layout possibilities that are not used.
 # That means we need to be able to express size constraints on these.
 
-type AdhocContainerPromise <: ContainerPromise
+mutable struct AdhocContainerPromise <: ContainerPromise
     # A function of the form:
     #   f(parent::ParentDrawContext) → Container
     f::Function
@@ -307,14 +307,14 @@ compose(a::Context, b, c, ds...) = compose(compose(a, b), c, ds...)
 compose(a::Context, bs::AbstractArray) = compose(a, compose(bs...))
 compose(a::Context, bs::Tuple) = compose(a, compose(bs...))
 compose(a::Context) = a
-compose(a, b::(Void)) = a
+compose(a, b::(Nothing)) = a
 
-for (f, S, T) in [(:compose!, Property, (Void)),
-                  (:compose!, Form, (Void)),
+for (f, S, T) in [(:compose!, Property, (Nothing)),
+                  (:compose!, Form, (Nothing)),
                   (:compose!, Property, Any),
                   (:compose!, Form, Any),
-                  (:compose, Property, (Void)),
-                  (:compose, Form, (Void)),
+                  (:compose, Property, (Nothing)),
+                  (:compose, Form, (Nothing)),
                   (:compose, Property, Any),
                   (:compose, Form, Any)]
     eval(
@@ -402,7 +402,7 @@ function drawpart(backend::Backend, container::Container,
     has_properties = false
     if !isa(ctx.property_children, ListNull) || ctx.clip
         has_properties = true
-        properties = Array{Property}(0)
+        properties = Array{Property}(uninitialized, 0)
 
         child = ctx.property_children
         while !isa(child, ListNull)
@@ -459,7 +459,7 @@ function drawpart(backend::Backend, container::Container,
     end
 
     if ordered_children
-        container_children = Array{Tuple{Int, Int, Container}}(0)
+        container_children = Array{Tuple{Int, Int, Container}}(uninitialized, 0)
         child = ctx.container_children
         while !isa(child, ListNull)
             push!(container_children,
@@ -589,7 +589,7 @@ function showcompact_array(io::IO, a::AbstractArray)
     end
     print(io, "]")
 end
-showcompact_array(io::IO, a::Range) = showcompact(io, a)
+showcompact_array(io::IO, a::AbstractRange) = showcompact(io, a)
 showcompact(io::IO, f::Compose.Form) = print(io, Compose.form_string(f))
 showcompact(io::IO, p::Compose.Property) = print(io, Compose.prop_string(p))
 showcompact(io::IO, cp::ContainerPromise) = print(io, typeof(cp).name.name)

@@ -71,7 +71,7 @@ mutable struct Image{B<:ImageBackend} <: Backend
     ownedfile::Bool
 
     # Filename when ownedfile is true
-    filename::Union{AbstractString, (Void)}
+    filename::Union{AbstractString, (Nothing)}
 
     # True when finish has been called and no more drawing should occur
     finished::Bool
@@ -87,7 +87,7 @@ mutable struct Image{B<:ImageBackend} <: Backend
     last_ctrl2_point::Nullable{AbsoluteVec2}
 end
 
-function (::Type{Image{B}}){B<:ImageBackend}(surface::CairoSurface,
+function (::Type{Image{B}})(surface::CairoSurface,
                ctx::CairoContext,
                out::IO;
 
@@ -115,7 +115,7 @@ function (::Type{Image{B}}){B<:ImageBackend}(surface::CairoSurface,
                emit_on_finish = false,
                ppmm = 72 / 25.4,
                last_ctrl1_point = Nullable{AbsoluteVec2}(),
-               last_ctrl2_point = Nullable{AbsoluteVec2}())
+               last_ctrl2_point = Nullable{AbsoluteVec2}()) where {B<:ImageBackend}
 
     Image{B}(out,
           surface,
@@ -145,17 +145,17 @@ function (::Type{Image{B}}){B<:ImageBackend}(surface::CairoSurface,
           last_ctrl2_point)
 end
 
-(::Type{Image{B}}){B<:ImageBackend}(surface::CairoSurface, ctx::CairoContext) =
+(::Type{Image{B}})(surface::CairoSurface, ctx::CairoContext) where {B<:ImageBackend} =
         Image{B}(surface, ctx, IOBuffer())
-(::Type{Image{B}}){B<:ImageBackend}(surface::CairoSurface) =
+(::Type{Image{B}})(surface::CairoSurface) where {B<:ImageBackend} =
         Image{B}(surface, CairoContext(surface))
 
-function (::Type{Image{B}}){B<:ImageBackend}(out::IO,
+function (::Type{Image{B}})(out::IO,
             width::MeasureOrNumber=default_graphic_width,
             height::MeasureOrNumber=default_graphic_height,
             emit_on_finish::Bool=true;
             dpi = (B==PNGBackend ? 96 : 72),
-            kwargs...)
+            kwargs...) where {B<:ImageBackend}
     width = size_measure(width)
     height = size_measure(height)
 
@@ -173,16 +173,16 @@ function (::Type{Image{B}}){B<:ImageBackend}(out::IO,
                 kwargs...)
 end
 
-(::Type{Image{B}}){B<:ImageBackend}(filename::AbstractString,
+(::Type{Image{B}})(filename::AbstractString,
             width::MeasureOrNumber=default_graphic_width,
             height::MeasureOrNumber=default_graphic_height;
-            dpi = (B==PNGBackend ? 96 : 72)) =
+            dpi = (B==PNGBackend ? 96 : 72)) where {B<:ImageBackend} =
         Image{B}(open(filename, "w"), width, height, dpi=dpi; ownedfile=true, filename=filename)
 
-(::Type{Image{B}}){B<:ImageBackend}(width::MeasureOrNumber=default_graphic_width,
+(::Type{Image{B}})(width::MeasureOrNumber=default_graphic_width,
             height::MeasureOrNumber=default_graphic_height,
             emit_on_finish::Bool=true;
-            dpi = (B==PNGBackend ? 96 : 72)) =
+            dpi = (B==PNGBackend ? 96 : 72)) where {B<:ImageBackend} =
         Image{B}(IOBuffer(), width, height, emit_on_finish, dpi=dpi)
 
 const PNG = Image{PNGBackend}
@@ -287,7 +287,7 @@ function push_property_frame(img::Image, properties::Vector{Property})
 
     frame = ImagePropertyFrame()
     applied_properties = Set{Type}()
-    scalar_properties = Array{Property}(0)
+    scalar_properties = Array{Property}(uninitialized, 0)
     for property in properties
         if isscalar(property) && !(typeof(property) in applied_properties)
             push!(scalar_properties, property)
@@ -405,13 +405,13 @@ function apply_property(img::Image, property::FontPrimitive)
     img.font = property.family
 
     font_desc = ccall((:pango_layout_get_font_description, Cairo._jl_libpango),
-                      Ptr{Void}, (Ptr{Void},), img.ctx.layout)
+                      Ptr{Nothing}, (Ptr{Nothing},), img.ctx.layout)
 
     if font_desc == C_NULL
         size = absolute_native_units(img, default_font_size.value)
     else
         size = ccall((:pango_font_description_get_size, Cairo._jl_libpango),
-                     Cint, (Ptr{Void},), font_desc)
+                     Cint, (Ptr{Nothing},), font_desc)
     end
 
     Cairo.set_font_face(img.ctx,
@@ -422,13 +422,13 @@ function apply_property(img::Image, property::FontSizePrimitive)
     img.fontsize = property.value
 
     font_desc = ccall((:pango_layout_get_font_description, Cairo._jl_libpango),
-                      Ptr{Void}, (Ptr{Void},), img.ctx.layout)
+                      Ptr{Nothing}, (Ptr{Nothing},), img.ctx.layout)
 
     if font_desc == C_NULL
         family = "sans"
     else
         family = ccall((:pango_font_description_get_family, Cairo._jl_libpango),
-                       Ptr{UInt8}, (Ptr{Void},), font_desc)
+                       Ptr{UInt8}, (Ptr{Nothing},), font_desc)
         family = unsafe_string(family)
     end
 
@@ -460,10 +460,10 @@ apply_property(img::Image, property::SVGAttributePrimitive) = nothing
 # --------------
 
 function current_point(img::Image)
-    x = Array{Float64}(1)
-    y = Array{Float64}(1)
-    ccall((:cairo_get_current_point, Cairo._jl_libcairo), Void,
-          (Ptr{Void}, Ptr{Float64}, Ptr{Float64}), img.ctx.ptr, x, y)
+    x = Array{Float64}(uninitialized, 1)
+    y = Array{Float64}(uninitialized, 1)
+    ccall((:cairo_get_current_point, Cairo._jl_libcairo), Nothing,
+          (Ptr{Nothing}, Ptr{Float64}, Ptr{Float64}), img.ctx.ptr, x, y)
     return ((x[1] / img.ppmm)*mm, (x[2] / img.ppmm)*mm)
 end
 

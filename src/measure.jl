@@ -6,8 +6,8 @@ using Measures: Add, Min, Max, Div, Mul, Neg
 const cx = Length{:cx}
 const cy = Length{:cy}
 
-*{T}(a::T, b::Type{cx}) = x_measure(a)
-*{T}(a::T, b::Type{cy}) = y_measure(a)
+(*)(a, b::Type{cx}) = x_measure(a)
+(*)(a, b::Type{cy}) = y_measure(a)
 
 # Pixels are not typically used in Compose in preference of absolute
 # measurements or measurements relative to parent canvases. So for the
@@ -25,14 +25,14 @@ const XYTupleOrVec = Union{Tuple{MeasureOrNumber,MeasureOrNumber}, Vec}
 # --------------------------
 
 # Compute the length of the given type.
-sum_component{T <: Length}(::Type{T}, l) = 0.0
-sum_component{T <: Length}(::Type{T}, l::T) = l.value
-sum_component{T <: Length}(::Type{T}, l::Add) = sum_component(T, l.a) + sum_component(T, l.b)
+sum_component(::Type{<:Length}, l) = 0.0
+sum_component(::Type{T}, l::T)   where {T<:Length} = l.value
+sum_component(::Type{T}, l::Add) where {T<:Length} = sum_component(T, l.a) + sum_component(T, l.b)
 
 # Scale a length component by some factor.
-scale_component{T <: Length}(::Type{T}, scale, l) = l
-scale_component{T <: Length}(::Type{T}, scale, l::T) = T(scale * l.value)
-scale_component{T <: Length}(::Type{T}, scale, l::Add) =
+scale_component(::Type{<:Length}, scale, l) = l
+scale_component(::Type{T}, scale, l::T)   where {T<:Length} = T(scale * l.value)
+scale_component(::Type{T}, scale, l::Add) where {T<:Length} =
         scale_component(T, scale, l.a) + scale_component(T, scale, l.b)
 
 
@@ -40,15 +40,15 @@ scale_component{T <: Length}(::Type{T}, scale, l::Add) =
 # ------------------------------
 
 x_measure(a::Measure) = a
-x_measure{T}(a::T) = Length{:cx, T}(a)
+x_measure(a::T) where {T} = Length{:cx, T}(a)
 
 y_measure(a::Measure) = a
-y_measure{T}(a::T) = Length{:cy, T}(a)
+y_measure(a::T) where {T} = Length{:cy, T}(a)
 
-x_measure{T<:Measure}(a::Vector{T}) = a
+x_measure(a::Vector{<:Measure}) = a
 x_measure(a::Vector) = Measure[x_measure(x) for x in a]
 
-y_measure{T<:Measure}(a::Vector{T}) = a
+y_measure(a::Vector{<:Measure}) = a
 y_measure(a::Vector) = Measure[y_measure(y) for y in a]
 
 size_measure(a::Measure) = a
@@ -78,15 +78,15 @@ function union(a::BoundingBox, b::BoundingBox, units=nothing, parent_abs_width=n
     for m in (x0,y0,x1,y1)
         # Pure absolute or pure relative points are fine. When they are mixed,
         # there are problems
-        if !isabsolute(m) && m.abs != 0.0
+        if !Measures.isabsolute(m) && m.abs != 0.0
             units == nothing || parent_abs_width == nothing || parent_abs_height == nothing &&
                     error("""Bounding boxes are uncomputable without knowledge of the
                         absolute dimensions of the top canvase due to mixing of relative
                         and absolute coordinates. Either pass the dimension as a parameter
                         or restrict the context to one kind of coordinates.""")
             parent_box = AbsoluteBox(0.0,0.0,parent_abs_width,parent_abs_height)
-            abb = union(absolute_units(a,IdentityTransform(),units,parent_box),
-                        absolute_units(b,IdentityTransform(),units,parent_box))
+            abb = union(Measures.absolute_units(a,IdentityTransform(),units,parent_box),
+                        Measures.absolute_units(b,IdentityTransform(),units,parent_box))
             return BoundingBox(Measure(;abs = abb.x0), Measure(;abs = abb.x0),
                                Measure(;abs = abb.width), Measure(;abs = abb.height))
         end
@@ -157,10 +157,10 @@ Measures.height(units::UnitBox) = units.height
 ispadded(units::UnitBox) = units.leftpad != 0mm || units.rightpad != 0mm ||
         units.toppad != 0mm || units.bottompad != 0mm
 
-isxflipped{S, T, U, V}(units::UnitBox{S, T, U, V}) = units.width < zero(U)
-isyflipped{S, T, U, V}(units::UnitBox{S, T, U, V}) = units.height < zero(V)
+isxflipped(units::UnitBox{<:Any,<:Any,U})       where {U} = units.width < zero(U)
+isyflipped(units::UnitBox{<:Any,<:Any,<:Any,V}) where {V} = units.height < zero(V)
 hasunits(::Type, x::Measure) = false
-hasunits{u, T}(::Type{Length{u}}, x::Length{u, T}) = true
+hasunits(::Type{Length{u}}, x::Length{u}) where {u} = true
 hasunits(T::Type, x::Measures.BinaryOp) = hasunits(T, x.a) || hasunits(T, x.b)
 
 
@@ -213,7 +213,7 @@ function convert(::Type{Transform}, rot::Rotation)
 end
 
 # Mirror about a point at a given angle
-type Mirror
+mutable struct Mirror
     theta::Float64
     point::Vec
 end

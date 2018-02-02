@@ -93,7 +93,7 @@ function PGF(out::IO,
              buf = IOBuffer(),
              visible = true,
              color_set = Set{Color}([colorant"black"]),
-             property_stack = Array{PGFPropertyFrame}(0),
+             property_stack = Array{PGFPropertyFrame}(uninitialized, 0),
              vector_properties = Dict{Type, Nullable{Property}}(),
              clippath = nothing,
              finished = false,
@@ -457,7 +457,7 @@ function push_property_frame(img::PGF, properties::Vector{Property})
 
     frame = PGFPropertyFrame()
     applied_properties = Set{Type}()
-    scalar_properties = Array{Property}(0)
+    scalar_properties = Array{Property}(uninitialized, 0)
     for property in properties
         if !isrepeatable(property) && (typeof(property) in applied_properties)
             continue

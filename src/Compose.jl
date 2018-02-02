@@ -6,6 +6,8 @@ using Colors
 using IterTools
 using DataStructures
 using Compat
+import Compat.Dates
+using Compat.Printf
 using Measures
 using Nullables
 import JSON
@@ -16,7 +18,7 @@ import Base: length, start, next, done, isempty, getindex, setindex!,
 
 import Measures: resolve, w, h
 
-export compose, compose!, Context, UnitBox, AbsoluteBoundingBox, Rotation, Mirror,
+export compose, compose!, Context, UnitBox, Rotation, Mirror,
        ParentDrawContext, context, ctxpromise, table, set_units!, minwidth, minheight,
        text_extents, max_text_extents, polygon, line, rectangle, circle, path,
        ellipse, text, curve, bitmap, stroke, fill, strokedash, strokelinecap,
@@ -26,7 +28,7 @@ export compose, compose!, Context, UnitBox, AbsoluteBoundingBox, Rotation, Mirro
        vbottom, SVG, SVGJS, PGF, PNG, PS, PDF, draw, pad, pad_inner, pad_outer,
        hstack, vstack, gridstack, LineCapButt, LineCapSquare, LineCapRound,
        CAIROSURFACE, introspect, set_default_graphic_size, set_default_jsmode,
-       boundingbox, Patchable
+       boundingbox
 
 function isinstalled(pkg, ge=v"0.0.0-")
     try
@@ -36,7 +38,7 @@ function isinstalled(pkg, ge=v"0.0.0-")
         ver == nothing && try
             # Assume the version is new enough if the package is in LOAD_PATH
             ex = Expr(:import, Symbol(pkg))
-            @eval $ex
+            @eval @__MODULE__ $ex
             return true
         catch
             return false
@@ -179,11 +181,11 @@ if isinstalled("Fontconfig")
     function __init__()
         global pango_cairo_ctx
         global pangolayout
-        ccall((:g_type_init, Cairo._jl_libgobject), Void, ())
+        ccall((:g_type_init, Cairo._jl_libgobject), Nothing, ())
         pango_cairo_fm  = ccall((:pango_cairo_font_map_new, libpangocairo),
-                                 Ptr{Void}, ())
+                                 Ptr{Nothing}, ())
         pango_cairo_ctx = ccall((:pango_font_map_create_context, libpango),
-                                 Ptr{Void}, (Ptr{Void},), pango_cairo_fm)
+                                 Ptr{Nothing}, (Ptr{Nothing},), pango_cairo_fm)
         pangolayout = PangoLayout()
     end
 else

@@ -20,7 +20,7 @@ Attempt to batch a form. Return a Nullable{FormBatch} which is null if the Form
 could not be batched, and non-null if the original form can be replaced with teh
 resulting FormBatch.
 """
-batch{P}(form::Form{P}) = Nullable{FormBatch{P}}()
+batch(form::Form{P}) where {P} = Nullable{FormBatch{P}}()
 
 # Note: in tests using random data, this optimization wasn't worth it. I'm
 # keeping it around out of hopes I find a more clever version that is
@@ -48,7 +48,7 @@ function filter_redundant_offsets!(offsets::Vector{AbsoluteVec2})
     return nonredundant_offsets
 end
 
-function batch{T <: CirclePrimitive}(form::Form{T})
+function batch(form::Form{<:CirclePrimitive})
     # circles can be batched if they all have the same radius.
     r = form.primitives[1].radius
     n = length(form.primitives)
@@ -57,7 +57,7 @@ function batch{T <: CirclePrimitive}(form::Form{T})
     end
 
     prim = CirclePrimitive((0mm, 0mm), r)
-    offsets = Array{AbsoluteVec2}(n)
+    offsets = Array{AbsoluteVec2}(uninitialized, n)
     for i in 1:n
         offsets[i] = form.primitives[i].center
     end
@@ -191,7 +191,7 @@ function optimize_batching(ctx::Context)
 
         if !haskey(grouped_forms, h)
             grouped_forms[h] = Form[similar(form) for form in forms]
-            group_prop = Array{Property}(length(properties))
+            group_prop = Array{Property}(uninitialized, length(properties))
             for j in 1:length(properties)
                 group_prop[j] = Property([properties[j].primitives[i]])
             end

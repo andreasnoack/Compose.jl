@@ -8,10 +8,10 @@ struct Form{P <: FormPrimitive} <: ComposeNode
     primitives::Vector{P}
     tag::Symbol
 
-    (::Type{Form{P}}){P}(prim, tag::Symbol=empty_tag) = new{P}(prim, tag)
+    (::Type{Form{P}})(prim, tag::Symbol=empty_tag) where {P} = new{P}(prim, tag)
 end
 
-Form{P<:FormPrimitive}(primitives::Vector{P}, tag::Symbol=empty_tag) = Form{P}(primitives, tag)
+Form(primitives::Vector{P}, tag::Symbol=empty_tag) where {P<:FormPrimitive} = Form{P}(primitives, tag)
 
 isempty(f::Form) = isempty(f.primitives)
 
@@ -21,7 +21,7 @@ isscalar(f::Form) =
 resolve(box::AbsoluteBox, units::UnitBox, t::Transform, form::Form) =
         Form([resolve(box, units, t, primitive) for primitive in form.primitives])
 
-Base.similar{T}(f::Form{T}) = Form{T}(T[])
+Base.similar(f::Form{T}) where {T} = Form{T}(T[])
 
 form_string(::Form) = "FORM"  # fallback definition
 
@@ -45,7 +45,7 @@ polygon() = Form([PolygonPrimitive(Vec[])])
 Define a polygon. `points` is an array of `(x,y)` tuples
 that specify the corners of the polygon.
 """
-function polygon{T <: XYTupleOrVec}(points::AbstractArray{T}, tag=empty_tag)
+function polygon(points::AbstractArray{<:XYTupleOrVec}, tag=empty_tag)
     XM, YM = narrow_polygon_point_types(Vector[points])
     if XM == Any
         XM = Measure
@@ -64,7 +64,7 @@ function polygon(point_arrays::AbstractArray, tag=empty_tag)
     VecType = XM == YM == Any ? Vec : Tuple{XM, YM}
     PrimType = XM == YM == Any ? PolygonPrimitive : PolygonPrimitive{VecType}
 
-    polyprims = Array{PrimType}(length(point_arrays))
+    polyprims = Array{PrimType}(uninitialized, length(point_arrays))
     for (i, point_array) in enumerate(point_arrays)
         polyprims[i] = PrimType(VecType[(x_measure(point[1]), y_measure(point[2]))
                                         for point in point_array])
@@ -216,7 +216,7 @@ struct CirclePrimitive{P <: Vec, M <: Measure} <: FormPrimitive
     radius::M
 end
 
-CirclePrimitive{P, M}(center::P, radius::M) = CirclePrimitive{P, M}(center, radius)
+CirclePrimitive(center::P, radius::M) where {P,M} = CirclePrimitive{P, M}(center, radius)
 CirclePrimitive(x, y, r) = CirclePrimitive((x_measure(x), y_measure(y)), x_measure(r))
 
 @compat const Circle{P<:CirclePrimitive} = Form{P}
@@ -400,8 +400,8 @@ text(xs::AbstractArray, ys::AbstractArray, values::AbstractArray,
     @makeform (x in xs, y in ys, value in values, halign in haligns, valign in valigns, rot in rots),
         TextPrimitive((x_measure(x), y_measure(y)), value, halign, valign, rot) tag
 
-function resolve{P, R}(box::AbsoluteBox, units::UnitBox, t::Transform,
-                       p::TextPrimitive{P, R})
+function resolve(box::AbsoluteBox, units::UnitBox, t::Transform,
+                       p::TextPrimitive)
     rot = resolve(box, units, t, p.rot)
     return TextPrimitive{AbsoluteVec2, typeof(rot)}(
                 resolve(box, units, t, p.position),
@@ -451,7 +451,7 @@ function line()
     return Line{typeof(prim)}([prim])
 end
 
-function line{T <: XYTupleOrVec}(points::AbstractArray{T}, tag=empty_tag)
+function line(points::AbstractArray{<:XYTupleOrVec}, tag=empty_tag)
     XM, YM = narrow_polygon_point_types(Vector[points])
     VecType = XM == YM == Any ? Vec2 : Tuple{XM, YM}
     prim = LinePrimitive(VecType[(x_measure(point[1]), y_measure(point[2])) for point in points])
@@ -463,7 +463,7 @@ function line(point_arrays::AbstractArray, tag=empty_tag)
     VecType = XM == YM == Any ? Vec2 : Tuple{XM, YM}
     PrimType = XM == YM == Any ? LinePrimitive : LinePrimitive{VecType}
 
-    lineprims = Array{PrimType}(length(point_arrays))
+    lineprims = Array{PrimType}(uninitialized, length(point_arrays))
     for (i, point_array) in enumerate(point_arrays)
         p = PrimType(VecType[(x_measure(point[1]), y_measure(point[2]))
                              for point in point_array])
@@ -862,7 +862,7 @@ struct ArcRelPathOp <: PathOp
     to::Vec
 end
 
-function parsepathop{T <: Union{ArcAbsPathOp, ArcRelPathOp}}(::Type{T}, tokens::AbstractArray, i)
+function parsepathop(::Type{T}, tokens::AbstractArray, i) where {T<:Union{ArcAbsPathOp, ArcRelPathOp}}
     assert_pathop_tokens_len(T, tokens, i, 7)
 
     if isa(tokens[i + 3], Bool)
@@ -965,7 +965,7 @@ const Path = Form{PathPrimitive}
 
 path(tokens::AbstractArray, tag=empty_tag) = Path([PathPrimitive(parsepath(tokens))], tag)
 
-path{T <: AbstractArray}(tokens::AbstractArray{T}, tag=empty_tag) =
+path(tokens::AbstractArray{<:AbstractArray}, tag=empty_tag) =
         Path([PathPrimitive(parsepath(ts)) for ts in tokens], tag)
 
 resolve(box::AbsoluteBox, units::UnitBox, t::Transform, p::PathPrimitive) =

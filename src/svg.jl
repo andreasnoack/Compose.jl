@@ -10,7 +10,7 @@ const xmlns = Dict()
 function svg_fmt_float(x::Fractional)
     # All svg (in our use) coordinates are in millimeters. This number gives the
     # largest deviation from the true position allowed in millimeters.
-    const eps = 0.01
+    eps = 0.01
     a = @sprintf("%0.8f", round(x / eps) * eps)
     n = length(a)
 
@@ -28,8 +28,8 @@ end
 # A much faster version of svg_fmt_float. This does not allocate any
 # temporary buffers, because it writes directly to the output.
 function svg_print_float(io::IO, x::AbstractFloat)
-    const ndig = 2
-    const eps = 0.01
+    ndig = 2
+    eps = 0.01
     #const eps = 1.0/10^ndig
 
     if isfinite(x)
@@ -56,7 +56,7 @@ function svg_print_float(io::IO, x::AbstractFloat)
     end
 end
 
-let a = Array{UInt8}(20)
+let a = Array{UInt8}(uninitialized, 20)
     global svg_print_uint
     function svg_print_uint(io::IO, x::Unsigned, width = 0, drop = false)
         n = length(a)
@@ -83,7 +83,7 @@ end
 
 # Format a color for SVG.
 svg_fmt_color(c::Color) = string("#", hex(c))
-svg_fmt_color(c::(Void)) = "none"
+svg_fmt_color(c::(Nothing)) = "none"
 
 # Replace newlines in a string with the appropriate SVG tspan tags.
 function svg_newlines(input::AbstractString, x::Float64)
@@ -147,7 +147,7 @@ mutable struct SVG <: Backend
     out::IO
 
     # Save output from IOBuffers to allow multiple calls to writemime
-    cached_out::Union{AbstractString, (Void)}
+    cached_out::Union{AbstractString, (Nothing)}
 
     # Unique ID for the figure.
     id::AbstractString
@@ -161,7 +161,7 @@ mutable struct SVG <: Backend
     # SVG forbids defining the same property twice, so we have to keep track
     # of which vector property of which type is in effect. If two properties of
     # the same type are in effect, the one higher on the stack takes precedence.
-    vector_properties::Dict{Type, Union{(Void), Property}}
+    vector_properties::Dict{Type, Union{(Nothing), Property}}
 
     # Clip-paths that need to be defined at the end of the document.
     clippaths::OrderedDict{ClipPrimitive, Compat.String}
@@ -180,7 +180,7 @@ mutable struct SVG <: Backend
     ownedfile::Bool
 
     # Filename when ownedfile is true
-    filename::Union{AbstractString, (Void)}
+    filename::Union{AbstractString, (Nothing)}
 
     # Emit the graphic on finish when writing to a buffer.
     emit_on_finish::Bool
@@ -224,10 +224,10 @@ function SVG(out::IO,
              cached_out = nothing,
              id = string("img-", string(Base.Random.uuid4())[1:8]),
              indentation = 0,
-             property_stack = Array{SVGPropertyFrame}(0),
-             vector_properties = Dict{Type, Union{(Void), Property}}(),
+             property_stack = Array{SVGPropertyFrame}(uninitialized, 0),
+             vector_properties = Dict{Type, Union{(Nothing), Property}}(),
              clippaths = OrderedDict{ClipPrimitive, Compat.String}(),
-             batches = Array{Tuple{FormPrimitive, Compat.String}}(0),
+             batches = Array{Tuple{FormPrimitive, Compat.String}}(uninitialized, 0),
              embobj = Set{AbstractString}(),
              finished = false,
              ownedfile = false,
@@ -1111,7 +1111,7 @@ function push_property_frame(img::SVG, properties::Vector{Property})
 
     frame = SVGPropertyFrame()
     applied_properties = Set{Type}()
-    scalar_properties = Array{Property}(0)
+    scalar_properties = Array{Property}(uninitialized, 0)
     for property in properties
         if !isrepeatable(property) && (typeof(property) in applied_properties)
             continue

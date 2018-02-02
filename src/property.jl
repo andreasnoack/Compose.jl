@@ -1,7 +1,7 @@
 @compat abstract type PropertyPrimitive end
 
 # Meaningless isless function used to sort in optimize_batching
-function Base.isless{T <: PropertyPrimitive}(a::T, b::T)
+function Base.isless(a::T, b::T) where {T<:PropertyPrimitive}
     for field in fieldnames(T)
         x = getfield(a, field)
         y = getfield(b, field)
@@ -36,7 +36,7 @@ isscalar(p::Property) =
 # Some properties can be applied multiple times, most cannot.
 isrepeatable(p::Property) = false
 
-resolve{T}(box::AbsoluteBox, units::UnitBox, t::Transform, p::Property{T}) =
+resolve(box::AbsoluteBox, units::UnitBox, t::Transform, p::Property{T}) where {T} =
         Property{T}([resolve(box, units, t, primitive) for primitive in p.primitives])
 
 # Property primitive catchall: most properties don't need measure transforms
@@ -52,7 +52,7 @@ end
 
 const Stroke = Property{StrokePrimitive}
 
-stroke(c::(Void)) = Stroke([StrokePrimitive(RGBA{Float64}(0, 0, 0, 0))])
+stroke(c::(Nothing)) = Stroke([StrokePrimitive(RGBA{Float64}(0, 0, 0, 0))])
 stroke(c::Union{Colorant, AbstractString}) = Stroke([StrokePrimitive(parse_colorant(c))])
 stroke(cs::AbstractArray) = Stroke([StrokePrimitive(c == nothing ?
         RGBA{Float64}(0, 0, 0, 0) : parse_colorant(c)) for c in cs])
@@ -69,7 +69,7 @@ end
 
 const Fill = Property{FillPrimitive}
 
-fill(c::(Void)) = Fill([FillPrimitive(RGBA{Float64}(0.0, 0.0, 0.0, 0.0))])
+fill(c::(Nothing)) = Fill([FillPrimitive(RGBA{Float64}(0.0, 0.0, 0.0, 0.0))])
 fill(c::Union{Colorant, AbstractString}) = Fill([FillPrimitive(parse_colorant(c))])
 fill(cs::AbstractArray) = Fill([FillPrimitive(c == nothing ?
         RGBA{Float64}(0.0, 0.0, 0.0, 0.0) : parse_colorant(c)) for c in cs])
@@ -235,9 +235,9 @@ end
 
 const Clip = Property{ClipPrimitive}
 
-clip() = Clip([ClipPrimitive(Array{Vec}(0))])
+clip() = Clip([ClipPrimitive(Array{Vec}(uninitialized, 0))])
 
-function clip{T <: XYTupleOrVec}(points::AbstractArray{T})
+function clip(points::AbstractArray{<:XYTupleOrVec})
     XM, YM = narrow_polygon_point_types(Vector[points])
     if XM == Any
         XM = Length{:cx, Float64}
@@ -256,7 +256,7 @@ function clip(point_arrays::AbstractArray...)
     VecType = XM == YM == Any ? Vec : Vec{XM, YM}
     PrimType = XM == YM == Any ? ClipPrimitive : ClipPrimitive{VecType}
 
-    clipprims = Array{PrimType}(length(point_arrays))
+    clipprims = Array{PrimType}(uninitialized, length(point_arrays))
     for (i, point_array) in enumerate(point_arrays)
         clipprims[i] = ClipPrimitive(VecType[(x_measure(point[1]), y_measure(point[2]))
                                              for point in point_array])
@@ -396,7 +396,7 @@ end
 
 struct JSIncludePrimitive <: PropertyPrimitive
     value::AbstractString
-    jsmodule::Union{(Void), Tuple{AbstractString, AbstractString}}
+    jsmodule::Union{(Nothing), Tuple{AbstractString, AbstractString}}
 end
 
 const JSInclude = Property{JSIncludePrimitive}

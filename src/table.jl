@@ -14,11 +14,11 @@ mutable struct Table <: ContainerPromise
 
     # If non-nothing, constrain the focused cells to have a proportional
     # relationship.
-    x_prop::Union{(Void), Vector{Float64}}
-    y_prop::Union{(Void), Vector{Float64}}
+    x_prop::Union{(Nothing), Vector{Float64}}
+    y_prop::Union{(Nothing), Vector{Float64}}
 
     # If non-nothing, constrain the focused cells to have a fixed aspect ratio.
-    aspect_ratio::Union{(Void), Float64}
+    aspect_ratio::Union{(Nothing), Float64}
 
     # fixed configuration
     fixed_configs::Vector
@@ -60,7 +60,7 @@ function Table(m::Integer, n::Integer, y_focus::UnitRange{Int}, x_focus::UnitRan
               fixed_configs,
               units, order, withjs, withoutjs)
     for i in 1:m, j in 1:n
-        tbl.children[i, j] = Array{Context}(0)
+        tbl.children[i, j] = Array{Context}(uninitialized, 0)
     end
     return tbl
 end
@@ -127,12 +127,12 @@ function realize_brute_force(tbl::Table, drawctx::ParentDrawContext)
     # which is basically "size needed" - "size available".
     minbadness = Inf
 
-    focused_col_widths = Array{Float64}(length(tbl.x_focus))
-    focused_row_heights = Array{Float64}(length(tbl.y_focus))
+    focused_col_widths = Array{Float64}(uninitialized, length(tbl.x_focus))
+    focused_row_heights = Array{Float64}(uninitialized, length(tbl.y_focus))
 
     # minimum sizes for each column and row
-    minrowheights = Array{Float64}(m)
-    mincolwidths = Array{Float64}(n)
+    minrowheights = Array{Float64}(uninitialized, m)
+    mincolwidths = Array{Float64}(uninitialized, n)
 
     # convert tbl.fixed_configs to linear indexing
     fixed_configs = Any[
